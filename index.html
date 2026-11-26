@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Online Lab Results – HappyHearts</title>
+<style>
+:root{--navy:#1c2e5a;--orange:#7b1e30;--bg:#f6f4f1;--line:#e7e2dc;--muted:#6b6670;--red:#c62828;--blue:#1565c0}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:#16161a}
+.v-top{background:#fff;border-bottom:3px solid var(--orange);padding:14px 16px;text-align:center}
+.v-top img{max-height:56px;max-width:90%}
+.lname{font-size:26px;font-weight:800}.lsub{font-size:11px;letter-spacing:1.5px;font-weight:700;color:#444}
+.v-wrap{max-width:620px;margin:0 auto;padding:16px;font-size:16px}
+.v-card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:14px}
+.v-card h1{font-size:20px;margin:0 0 6px;color:var(--navy)}
+.v-field{margin:14px 0}.v-field label{display:block;font-weight:600;margin-bottom:6px;font-size:15px}
+.v-field input{width:100%;font-size:18px;padding:12px;border:1.5px solid #c9ced8;border-radius:10px}
+#vcode{text-transform:uppercase;letter-spacing:3px;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700}
+.v-bday{display:grid;grid-template-columns:1.6fr 1fr 1.2fr;gap:8px}
+.v-bday select{width:100%;font-size:17px;padding:12px 8px;border:1.5px solid #c9ced8;border-radius:10px;background:#fff;color:inherit}
+.v-btn{display:block;width:100%;border:0;background:var(--orange);color:#fff;font-size:17px;font-weight:700;padding:14px;border-radius:10px;cursor:pointer}
+.v-btn:disabled{opacity:.6}.v-btn.sec{background:var(--navy)}.v-btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--navy);margin-top:10px}
+.v-pt{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px}.v-pt b{color:var(--muted);font-weight:600}
+.v-tabs{display:flex;gap:8px;overflow-x:auto;margin:4px 0 12px}
+.v-tabs button{flex:none;border:1.5px solid var(--navy);background:#fff;color:var(--navy);padding:9px 16px;border-radius:22px;font-weight:700;font-size:15px}
+.v-tabs button.on{background:var(--navy);color:#fff}
+.v-sec{font-size:13px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 4px}
+.v-row{padding:11px 0;border-bottom:1px solid #eef0f3}.v-row:last-child{border-bottom:0}
+.v-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.v-name{font-weight:600}.v-val{font-weight:800;font-size:18px;text-align:right}
+.v-val.H{color:var(--red)}.v-val.L{color:var(--blue)}
+.v-badge{font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:2px;color:#fff}
+.v-badge.H{background:var(--red)}.v-badge.L{background:var(--blue)}
+.v-sub{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted);margin-top:3px}
+.v-prev{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;background:#f6f7f9;border-radius:8px;padding:6px 9px;font-size:13px;color:#3d4350}
+.v-note{font-size:13px;color:var(--muted);line-height:1.5}
+.v-sum{background:#fbf1f3;border:1px solid #e7c3ca;border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.v-sum.ok{background:#eef7ef;border-color:#bfe0c2}
+.v-foot{text-align:center;font-size:12px;color:var(--muted);padding:10px 16px 30px}
+.err{background:#fdecea;color:#8e1b1b;padding:10px 12px;border-radius:8px;margin-top:12px;font-size:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#16161a;color:#fff;padding:12px 20px;border-radius:8px;z-index:50;max-width:90vw}
+.toast.err{background:var(--red)}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid #ccc;border-top-color:var(--orange);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="root"><div class="v-wrap"><div class="v-card" style="text-align:center"><span class="spin"></span> Loading…</div></div></div>
+<script>
+/* HappyHearts – patient results page (static, no patient data stored here).
+   Data is fetched from the clinic's Google Apps Script only after the correct
+   Access Code + birthday are entered. */
+(function () {
+  var q = new URLSearchParams(location.search);
+  var TOKEN = (q.get('r') || '').replace(/[^A-Za-z0-9]/g, '');
+  var DEP = (q.get('d') || '').replace(/[^A-Za-z0-9_-]/g, '');
+  var API = DEP ? 'https://script.google.com/macros/s/' + DEP + '/exec' : '';
+  var PUB = { clinic: {}, logo: '', ranges: {} }, TESTS = {};
+  var TEST_ORDER = ['cbc', 'abo', 'chem', 'uacr', 'ua', 'fa', 'fobt', 'other'];
+  var NAMES = { cbc: 'Complete Blood Count', abo: 'Blood Typing', chem: 'Blood Chemistry', uacr: 'Urine Albumin / Creatinine Ratio', ua: 'Urinalysis', fa: 'Fecalysis', fobt: 'Fecal Occult Blood Test', other: 'Other Tests' };
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var $ = function (s) { return document.querySelector(s); };
+  var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var app = $('#root'), data = null;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function num(v) { var s = String(v == null ? '' : v).trim().replace(/,/g, ''); if (!/^[<>]?\s*-?\d*\.?\d+$/.test(s)) return NaN; return parseFloat(s.replace(/[<>\s]/g, '')); }
+  function fmtN(x, dp) { if (x === null || x === undefined || x === '') return ''; if (x === 0) return '0'; return Number(x).toFixed(dp); }
+  function fmtRange(rg, dp, unit) { if (!rg) return ''; var lo = rg[0], hi = rg[1], s = lo == null && hi == null ? '' : lo == null ? '< ' + fmtN(hi, dp) : hi == null ? '> ' + fmtN(lo, dp) : fmtN(lo, dp) + ' - ' + fmtN(hi, dp); return s + (unit && s ? ' ' + unit : ''); }
+  function rangeFor(ranges, tk, p, sex, conv) { var o = ranges && ranges[tk + '.' + p.k], rr = (o && (conv ? o.cr : o.r)) || (conv ? p.cr : p.r); return rr ? (sex === 'F' ? rr.f : rr.m) : null; }
+  function rdp(p, conv) { return conv ? (p.crdp != null ? p.crdp : p.cdp) : (p.rdp != null ? p.rdp : p.dp); }
+  function flagOf(v, rg) { var x = num(v); if (isNaN(x) || !rg) return ''; if (rg[0] != null && x < rg[0]) return 'L'; if (rg[1] != null && x > rg[1]) return 'H'; return ''; }
+  function parseRef(ref) {
+    var t = String(ref || '').replace(/,/g, ''), m;
+    if ((m = /^\s*(-?\d*\.?\d+)\s*(?:-|–|to)\s*(-?\d*\.?\d+)/i.exec(t))) return [parseFloat(m[1]), parseFloat(m[2])];
+    if ((m = /^\s*(?:<|≤|<=|below|less than)\s*(-?\d*\.?\d+)/i.exec(t))) return [null, parseFloat(m[1])];
+    if ((m = /^\s*(?:>|≥|>=|above|greater than)\s*(-?\d*\.?\d+)/i.exec(t))) return [parseFloat(m[1]), null];
+    return null;
+  }
+  function otherRows(v) { var t = v && v.tests && v.tests.other, out = []; ((t && t.g) || []).forEach(function (g) { (g.rows || []).forEach(function (r) { out.push({ g: g.t, n: r.n, v: r.v, u: r.u, ref: r.ref }); }); }); return out; }
+  function getVal(v, tk, k, conv) { if (tk === 'other') { var o = otherRows(v).filter(function (x) { return x.n.toUpperCase() === String(k).toUpperCase(); })[0]; return o && !conv ? o.v : ''; } var t = v && v.tests && v.tests[tk]; if (!t || !t.v || t.v[k] == null) return ''; var x = t.v[k]; return Array.isArray(x) ? (x[conv ? 1 : 0] || '') : (conv ? '' : String(x)); }
+  function parseD(d) { var a = String(d || '').split('-'); return { y: +a[0], m: +a[1], d: +a[2] }; }
+  function fmtDate(d) { if (!d) return ''; var p = parseD(d); return MONTHS[p.m - 1].slice(0, 3) + ' ' + p.d + ', ' + p.y; }
+  function toast(msg, err) { var t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, err ? 5000 : 2800); }
+  function b64ToBlob(b64, type) { var bin = atob(b64), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type: type }); }
+  function downloadBlob(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000); }
+  function sparkSVG(vals, rg, w, h) {
+    var pts = vals.map(num), nums = pts.filter(function (x) { return !isNaN(x); });
+    if (nums.length < 2) return '';
+    var lo = Math.min.apply(null, nums), hi = Math.max.apply(null, nums);
+    if (rg) { if (rg[0] != null) lo = Math.min(lo, rg[0]); if (rg[1] != null) hi = Math.max(hi, rg[1]); }
+    if (hi === lo) { hi += 1; lo -= 1; }
+    var pad = 3, X = function (i) { return pad + i * (w - 2 * pad) / (pts.length - 1); }, Y = function (y) { return h - pad - (y - lo) * (h - 2 * pad) / (hi - lo); };
+    var band = '';
+    if (rg && (rg[0] != null || rg[1] != null)) { var y1 = Y(rg[1] != null ? rg[1] : hi), y2 = Y(rg[0] != null ? rg[0] : lo); band = '<rect x="0" y="' + y1.toFixed(1) + '" width="' + w + '" height="' + Math.max(1, y2 - y1).toFixed(1) + '" fill="#e3f1e4"/>'; }
+    var path = '', dots = '';
+    pts.forEach(function (y, i) { if (isNaN(y)) return; path += (path ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(y).toFixed(1); dots += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(y).toFixed(1) + '" r="' + (i === pts.length - 1 ? 2.8 : 2) + '" fill="' + (flagOf(y, rg) ? '#c62828' : '#1c2e5a') + '"/>'; });
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' + band + '<path d="' + path + '" fill="none" stroke="#1c2e5a" stroke-width="1.4"/>' + dots + '</svg>';
+  }
+
+  /* --- talk to the clinic's Google Apps Script (no cookies, so multi-account sign-in never interferes) --- */
+  function call(action, extra) {
+    var body = { action: action, token: TOKEN };
+    if (extra) Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
+    return fetch(API, { method: 'POST', credentials: 'omit', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(function (r) { if (!r.ok) throw new Error('NETWORK'); return r.json(); })
+      .then(function (j) { if (!j.ok) throw new Error(j.error || 'ERROR'); return j.data; });
+  }
+
+  function top() { var c = PUB.clinic || {}; return '<div class="v-top">' + (PUB.logo ? '<img src="' + PUB.logo + '" alt="' + esc(c.name || 'HappyHearts') + '">' : '<div class="lname">' + esc(c.name || 'HappyHearts') + '</div><div class="lsub">' + esc(c.sub || '') + '</div>') + '</div>'; }
+  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '</div>' : ''; }
+  function msg(title, text) { app.innerHTML = top() + '<div class="v-wrap"><div class="v-card"><h1>' + title + '</h1><p>' + text + '</p></div></div>' + foot(); }
+
+  var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
+  function bdaySel() {
+    var y = new Date().getFullYear(), ys = '', ds = '';
+    for (var i = y; i >= 1900; i--) ys += '<option value="' + i + '">' + i + '</option>';
+    for (var d = 1; d <= 31; d++) ds += '<option value="' + p2(d) + '">' + d + '</option>';
+    return '<div class="v-field"><label for="vbm">Patient\'s birthday <span style="font-weight:500;color:#6b7280">(Month / Day / Year)</span></label><div class="v-bday">' +
+      '<select id="vbm" required aria-label="Month"><option value="">Month</option>' + MONTHS.map(function (m, i) { return '<option value="' + p2(i + 1) + '">' + m + '</option>'; }).join('') + '</select>' +
+      '<select id="vbd" required aria-label="Day"><option value="">Day</option>' + ds + '</select>' +
+      '<select id="vby" required aria-label="Year"><option value="">Year</option>' + ys + '</select></div>' +
+      '<div class="v-note" style="margin-top:6px">Example: <b>March</b> / <b>15</b> / <b>1980</b></div></div>';
+  }
+
+  function lock(err, code, bday) {
+    app.innerHTML = top() + '<div class="v-wrap"><form class="v-card" id="f" autocomplete="off"><h1>View your lab results</h1><p class="v-note">Enter the Access Code printed on your claim stub and the patient\'s birthday.</p>' +
+      '<div class="v-field"><label for="vcode">Access Code</label><input id="vcode" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="ABC-123" maxlength="12" required></div>' +
+      bdaySel() +
+      '<button class="v-btn" id="go">View results</button>' + (err ? '<div class="err">' + err + '</div>' : '') + '</form>' +
+      '<div class="v-note" style="padding:0 4px">Your results are private and can only be opened with the correct Access Code and birthday.</div></div>' + foot();
+    if (code) $('#vcode').value = code;
+    if (bday) { var bp = bday.split('-'); $('#vby').value = bp[0]; $('#vbm').value = bp[1]; $('#vbd').value = bp[2]; }
+    $('#f').onsubmit = function (e) {
+      e.preventDefault();
+      var b = $('#go'), c = $('#vcode').value, d = $('#vby').value + '-' + $('#vbm').value + '-' + $('#vbd').value;
+      b.disabled = true; b.textContent = 'Opening…';
+      call('open', { code: c, bday: d }).then(function (r) {
+        data = r; data.code = c; data.bday = d;
+        show(TEST_ORDER.filter(function (k) { return r.visit.tests[k] || (r.visit.req || []).indexOf(k) >= 0; })[0]);
+      }).catch(function (ex) {
+        var m = String(ex.message || ex), t = m.indexOf('BAD_CODE') >= 0 ? 'Wrong Access Code or birthday. Please check and try again.' : m.indexOf('LOCKED') >= 0 ? 'Too many wrong attempts. Please try again after 15 minutes.' :
+          m.indexOf('NOT_READY') >= 0 ? 'Your results are not yet released. Please try again later.' : m.indexOf('BAD_LINK') >= 0 ? 'This link is not valid. Please scan the QR code again or contact the clinic.' : 'Cannot connect right now. Please check your internet and try again.';
+        lock(t, c, d);
+      });
+    };
+  }
+
+  function arrow(cur, prv) { var a = num(cur), b = num(prv); if (isNaN(a) || isNaN(b) || a === b) return ''; return a > b ? '▲ higher' : '▼ lower'; }
+  function otherDef(v) { var g = v.tests.other.g, ps = []; g.forEach(function (grp) { if (grp.t) ps.push({ h: grp.t }); grp.rows.forEach(function (r) { ps.push({ k: r.n, n: r.n, u: r.u, refText: r.ref, dp: 2 }); }); }); return { custom: true, params: ps }; }
+  function testHtml(tk) {
+    var T = tk === 'other' ? otherDef(data.visit) : (TESTS[tk] || { params: [] }), v = data.visit, pt = data.patient, prev = (data.prev || []).filter(function (x) { return x.tests[tk]; }), html = '', pend = null, flags = 0;
+    T.params.forEach(function (p) {
+      if (p.h) { pend = p.h; return; }
+      var val = getVal(v, tk, p.k, false); if (!val && !(tk === 'chem' && getVal(v, tk, p.k, true))) return;
+      if (pend) { html += '<div class="v-sec">' + esc(pend) + '</div>'; pend = null; }
+      var rg = T.custom ? parseRef(p.refText) : T.text ? null : rangeFor(PUB.ranges, tk, p, pt.sex, false), fl = flagOf(val, rg); if (fl) flags++;
+      var ref = T.custom ? (p.refText ? 'Reference: ' + p.refText + (rg && p.u ? ' ' + p.u : '') : '') : rg ? 'Normal: ' + fmtRange(rg, rdp(p), p.u) : '', conv = '';
+      if (tk === 'chem') { var cv = getVal(v, tk, p.k, true), rc = rangeFor(PUB.ranges, tk, p, pt.sex, true); if (cv && p.cu !== p.u) conv = cv + ' ' + p.cu + ' (' + fmtRange(rc, rdp(p, true), '') + ')'; }
+      var hist = prev.map(function (x) { return { d: x.date, x: getVal(x, tk, p.k, false) }; }).filter(function (h) { return h.x; }), ph = '';
+      if (hist.length) ph = '<div class="v-prev"><div>Previous (' + esc(fmtDate(hist[0].d)) + '): <b>' + esc(hist[0].x) + '</b> ' + arrow(val, hist[0].x) + '</div>' + (T.text ? '' : sparkSVG(hist.slice().reverse().map(function (h) { return h.x; }).concat([val]), rg, 84, 24)) + '</div>';
+      html += '<div class="v-row"><div class="v-line"><div class="v-name">' + esc(p.n) + '</div><div class="v-val ' + fl + '">' + esc(val) + ((T.text || T.simple || tk === 'other') && p.u ? ' <span style="font-size:12px;color:#6b7280">' + esc(p.u) + '</span>' : '') + (fl ? '<span class="v-badge ' + fl + '">' + (fl === 'H' ? 'HIGH' : 'LOW') + '</span>' : '') + '</div></div>' +
+        (ref || conv ? '<div class="v-sub"><span>' + esc(ref) + '</span><span>' + esc(conv) + '</span></div>' : '') + ph + '</div>';
+    });
+    var r = v.tests[tk].r;
+    return (T.text ? '' : '<div class="v-sum ' + (flags ? '' : 'ok') + '">' + (flags ? '<b>' + flags + '</b> result(s) outside the normal range (<b style="color:#c62828">red</b> = high, <b style="color:#1565c0">blue</b> = low).' : 'All results are within the normal range.') + '</div>') + html + (r ? '<p style="font-size:14px"><b>Remarks:</b> ' + esc(r) + '</p>' : '');
+  }
+  function show(cur) {
+    var v = data.visit, pt = data.patient, tks = TEST_ORDER.filter(function (k) { return v.tests[k] || (v.req || []).indexOf(k) >= 0; });
+    app.innerHTML = top() + '<div class="v-wrap"><div class="v-card"><div class="v-pt"><b>Name</b><span>' + esc(pt.name) + '</span><b>Patient No.</b><span>' + esc(pt.pno) + '</span><b>Test date</b><span>' + esc(fmtDate(v.date)) + '</span>' + (v.physician ? '<b>Physician</b><span>' + esc(v.physician) + '</span>' : '') + '</div></div>' +
+      '<div class="v-tabs">' + tks.map(function (k) { return '<button data-tk="' + k + '" class="' + (k === cur ? 'on' : '') + '">' + esc((TESTS[k] && TESTS[k].short) || NAMES[k]) + (v.tests[k] ? '' : ' ⏳') + '</button>'; }).join('') + '</div>' +
+      '<div class="v-card"><h1>' + esc(NAMES[cur] || '') + '</h1>' + (v.tests[cur] ? testHtml(cur) :
+        '<div style="text-align:center;padding:18px 6px"><div style="font-size:34px">⏳</div><div style="font-size:24px;font-weight:800;color:#a35a00;letter-spacing:3px;margin:4px 0">PENDING</div><p class="v-note" style="font-size:15px">This result is not yet available. Please check again later using the same QR code, Access Code and birthday.</p></div>') + '</div>' +
+      '<div class="v-card">' + (data.hasPdf ? '<button class="v-btn sec" id="pdf">Download official PDF</button>' : '') + '<button class="v-btn ghost" id="close">Close</button></div>' +
+      '<div class="v-note" style="padding:0 4px 8px">Note: HIGH or LOW does not always mean illness. Please show your results to your doctor for proper interpretation.</div></div>' + foot();
+    $$('[data-tk]').forEach(function (b) { b.onclick = function () { show(b.dataset.tk); }; });
+    $('#close').onclick = function () { data = null; lock(); };
+    if ($('#pdf')) $('#pdf').onclick = function () {
+      var b = this; b.disabled = true; b.textContent = 'Preparing PDF…';
+      call('pdf', { code: data.code, bday: data.bday }).then(function (r) { downloadBlob(b64ToBlob(r.b64, 'application/pdf'), r.name); b.disabled = false; b.textContent = 'Download official PDF'; })
+        .catch(function (e) { b.disabled = false; b.textContent = 'Download official PDF'; toast(String(e.message).indexOf('LOCKED') >= 0 ? 'Too many attempts.' : 'Could not download the PDF. Please try again.', true); });
+    };
+  }
+
+  if (!TOKEN || !API) { msg('Online Lab Results', 'Please scan the QR code on your claim stub or open the link sent to you by the clinic.'); return; }
+  call('clinic').then(function (c) { PUB = c; TESTS = c.tests || {}; lock(); })
+    .catch(function () { msg('Cannot connect', 'We could not reach the clinic\'s results system. Please check your internet connection and try again, or contact the clinic.'); });
+})();
+</script>
+</body>
+</html>
