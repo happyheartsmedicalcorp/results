@@ -120,7 +120,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
   }
 
   function top() { var c = PUB.clinic || {}; return '<div class="v-top">' + (PUB.logo ? '<img src="' + PUB.logo + '" alt="' + esc(c.name || 'HappyHearts') + '">' : '<div class="lname">' + esc(c.name || 'HappyHearts') + '</div><div class="lsub">' + esc(c.sub || '') + '</div>') + '</div>'; }
-  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '</div>' : ''; }
+  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '<br><span style="opacity:.5">page v3</span></div>' : ''; }
   function msg(title, text) { app.innerHTML = top() + '<div class="v-wrap"><div class="v-card"><h1>' + title + '</h1><p>' + text + '</p></div></div>' + foot(); }
 
   var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -128,12 +128,35 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
     var y = new Date().getFullYear(), ys = '', ds = '';
     for (var i = y; i >= 1900; i--) ys += '<option value="' + i + '">' + i + '</option>';
     for (var d = 1; d <= 31; d++) ds += '<option value="' + p2(d) + '">' + d + '</option>';
-    return '<div class="v-field"><label for="vbm">Patient\'s birthday <span style="font-weight:500;color:#6b7280">(Month / Day / Year)</span></label><div class="v-bday">' +
-      '<select id="vbm" required aria-label="Month"><option value="">Month</option>' + MONTHS.map(function (m, i) { return '<option value="' + p2(i + 1) + '">' + m + '</option>'; }).join('') + '</select>' +
-      '<select id="vbd" required aria-label="Day"><option value="">Day</option>' + ds + '</select>' +
-      '<select id="vby" required aria-label="Year"><option value="">Year</option>' + ys + '</select></div></div>';
+    return '<div class="v-field"><label for="vbt">Patient\'s birthday</label><input id="vbt" inputmode="numeric" autocomplete="off" placeholder="MM/DD/YYYY" maxlength="10"><div class="v-note" style="margin:8px 0 4px">or choose:</div><div class="v-bday">' +
+      '<select id="vbm" aria-label="Month"><option value="">Month</option>' + MONTHS.map(function (m, i) { return '<option value="' + p2(i + 1) + '">' + m + '</option>'; }).join('') + '</select>' +
+      '<select id="vbd" aria-label="Day"><option value="">Day</option>' + ds + '</select>' +
+      '<select id="vby" aria-label="Year"><option value="">Year</option>' + ys + '</select></div></div>';
   }
 
+  function parseBday(s) {
+    var m = /^\s*(\d{1,2})\s*[\/\-. ]\s*(\d{1,2})\s*[\/\-. ]\s*(\d{4})\s*$/.exec(String(s || '')); if (!m) return '';
+    var mo = +m[1], dd = +m[2], yy = +m[3]; if (mo < 1 || mo > 12 || dd < 1 || dd > 31 || yy < 1900 || yy > new Date().getFullYear()) return '';
+    return yy + '-' + p2(mo) + '-' + p2(dd);
+  }
+  function readBday() { var iso = parseBday($('#vbt').value); if (iso) return iso; var m = $('#vbm').value, d = $('#vbd').value, y = $('#vby').value; return m && d && y ? y + '-' + m + '-' + d : ''; }
+  function wireBday() {
+    var t = $('#vbt'), m = $('#vbm'), d = $('#vbd'), y = $('#vby');
+    t.addEventListener('input', function () {
+      var v = t.value;
+      if (/^\d*$/.test(v) || /^\d{2}\/\d{0,2}$/.test(v) || /^\d{2}\/\d{2}\/\d{0,4}$/.test(v)) { var g = v.replace(/\D/g, '').slice(0, 8), o = g.slice(0, 2); if (g.length > 2) o += '/' + g.slice(2, 4); if (g.length > 4) o += '/' + g.slice(4); t.value = o; }
+      var iso = parseBday(t.value); if (iso) { var a = iso.split('-'); y.value = a[0]; m.value = a[1]; d.value = a[2]; }
+    });
+    [m, d, y].forEach(function (s) { s.onchange = function () { if (m.value && d.value && y.value) t.value = m.value + '/' + d.value + '/' + y.value; }; });
+  }
+  function addWm(b64) {
+    if (!PUB.wm) return Promise.resolve(b64);
+    var raw = function (b) { var x = atob(b), a = new Uint8Array(x.length); for (var i = 0; i < x.length; i++) a[i] = x.charCodeAt(i); return a; };
+    return new Promise(function (res, rej) { if (window.PDFLib) return res(window.PDFLib); var s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js'; s.onload = function () { res(window.PDFLib); }; s.onerror = rej; document.head.appendChild(s); })
+      .then(function (L) { return L.PDFDocument.load(raw(b64)).then(function (doc) { return doc.embedPng(raw(PUB.wm.split(',')[1])).then(function (wm) { doc.getPages().forEach(function (pg) { var sz = pg.getSize(), ws = Math.max(sz.width / wm.width, sz.height / wm.height); pg.drawImage(wm, { x: 0, y: sz.height - wm.height * ws, width: wm.width * ws, height: wm.height * ws }); }); return doc.save(); }); }); })
+      .then(function (u8) { var s = '', ch = 0x8000; for (var i = 0; i < u8.length; i += ch) s += String.fromCharCode.apply(null, u8.subarray(i, i + ch)); return btoa(s); })
+      .catch(function () { return b64; });
+  }
   function lock(err, code, bday) {
     app.innerHTML = top() + '<div class="v-wrap"><form class="v-card" id="f" autocomplete="off"><h1>View your lab results</h1><p class="v-note">Enter the Access Code printed on your claim stub and the patient\'s birthday.</p>' +
       '<div class="v-field"><label for="vcode">Access Code</label><input id="vcode" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="ABC-123" maxlength="12" required></div>' +
@@ -141,10 +164,11 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
       '<button class="v-btn" id="go">View results</button>' + (err ? '<div class="err">' + err + '</div>' : '') + '</form>' +
       '<div class="v-note" style="padding:0 4px">Your results are private and can only be opened with the correct Access Code and birthday.</div></div>' + foot();
     if (code) $('#vcode').value = code;
-    if (bday) { var bp = bday.split('-'); $('#vby').value = bp[0]; $('#vbm').value = bp[1]; $('#vbd').value = bp[2]; }
+    wireBday(); if (bday) { var bp = bday.split('-'); $('#vby').value = bp[0]; $('#vbm').value = bp[1]; $('#vbd').value = bp[2]; $('#vbt').value = bp[1] + '/' + bp[2] + '/' + bp[0]; }
     $('#f').onsubmit = function (e) {
       e.preventDefault();
-      var b = $('#go'), c = $('#vcode').value, d = $('#vby').value + '-' + $('#vbm').value + '-' + $('#vbd').value;
+      var b = $('#go'), c = $('#vcode').value, d = readBday();
+      if (!d) { lock('Please enter the birthday as MM/DD/YYYY (for example 12/14/1991).', c, ''); return; }
       b.disabled = true; b.textContent = 'Opening…';
       call('open', { code: c, bday: d }).then(function (r) {
         data = r; data.code = c; data.bday = d;
@@ -185,7 +209,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
   function dlBtn(b, action, extra, label) {
     b.disabled = true; b.textContent = 'Preparing…';
     var body = { code: data.code, bday: data.bday }; if (extra) Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
-    call(action, body).then(function (r) { downloadBlob(b64ToBlob(r.b64, 'application/pdf'), r.name); b.disabled = false; b.textContent = label; })
+    call(action, body).then(function (r) { return (action === 'cumpdf' ? addWm(r.b64) : Promise.resolve(r.b64)).then(function (x) { downloadBlob(b64ToBlob(x, 'application/pdf'), r.name); b.disabled = false; b.textContent = label; }); })
       .catch(function (e) { b.disabled = false; b.textContent = label; toast(String(e.message).indexOf('LOCKED') >= 0 ? 'Too many attempts.' : 'Could not download. Please try again.', true); });
   }
   function afterShow(cur) {
