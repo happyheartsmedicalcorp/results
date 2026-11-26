@@ -65,7 +65,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
 (function () {
   var q = new URLSearchParams(location.search);
   var TOKEN = (q.get('r') || '').replace(/[^A-Za-z0-9]/g, '');
-  var DEP = (q.get('d') || '').replace(/[^A-Za-z0-9_-]/g, '');
+  var DEP = (q.get('d') || 'AKfycbzWRQ31MwndwfZMj5hOP5MWLn4uMRwbDO3jcYagaqMOcUWfAkDDut2sfzabXuX666Sa').replace(/[^A-Za-z0-9_-]/g, '');
   var API = DEP ? 'https://script.google.com/macros/s/' + DEP + '/exec' : '';
   var PUB = { clinic: {}, logo: '', ranges: {} }, TESTS = {};
   var TEST_ORDER = ['cbc', 'abo', 'chem', 'uacr', 'ua', 'fa', 'fobt', 'other'];
@@ -120,7 +120,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
   }
 
   function top() { var c = PUB.clinic || {}; return '<div class="v-top">' + (PUB.logo ? '<img src="' + PUB.logo + '" alt="' + esc(c.name || 'HappyHearts') + '">' : '<div class="lname">' + esc(c.name || 'HappyHearts') + '</div><div class="lsub">' + esc(c.sub || '') + '</div>') + '</div>'; }
-  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '<br><span style="opacity:.5">page v4</span></div>' : ''; }
+  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '<br><span style="opacity:.5">page v5</span></div>' : ''; }
   function msg(title, text) { app.innerHTML = top() + '<div class="v-wrap"><div class="v-card"><h1>' + title + '</h1><p>' + text + '</p></div></div>' + foot(); }
 
   var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
