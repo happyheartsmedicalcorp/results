@@ -69,7 +69,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
   var API = DEP ? 'https://script.google.com/macros/s/' + DEP + '/exec' : '';
   var PUB = { clinic: {}, logo: '', ranges: {} }, TESTS = {};
   var TEST_ORDER = ['cbc', 'abo', 'chem', 'uacr', 'ua', 'fa', 'fobt', 'other'];
-  var NAMES = { cbc: 'Complete Blood Count', abo: 'Blood Typing', chem: 'Blood Chemistry', uacr: 'Urine Albumin / Creatinine Ratio', ua: 'Urinalysis', fa: 'Fecalysis', fobt: 'Fecal Occult Blood Test', other: 'Other Tests', sendout: 'Other Tests (Partner Laboratory)', pending: 'Pending Results', cum: 'All Results (Cumulative)' };
+  var NAMES = { cbc: 'Complete Blood Count', abo: 'Blood Typing', chem: 'Blood Chemistry', uacr: 'Urine Albumin / Creatinine Ratio', ua: 'Urinalysis', fa: 'Fecalysis', fobt: 'Fecal Occult Blood Test', other: 'Other Tests', sendout: 'Others (Partner Laboratory)', pending: 'Pending Results', cum: 'All Results (Cumulative)' };
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   var $ = function (s) { return document.querySelector(s); };
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
@@ -120,7 +120,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
   }
 
   function top() { var c = PUB.clinic || {}; return '<div class="v-top">' + (PUB.logo ? '<img src="' + PUB.logo + '" alt="' + esc(c.name || 'HappyHearts') + '">' : '<div class="lname">' + esc(c.name || 'HappyHearts') + '</div><div class="lsub">' + esc(c.sub || '') + '</div>') + '</div>'; }
-  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '<br><span style="opacity:.5">page v6</span></div>' : ''; }
+  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '<br><span style="opacity:.5">page v8</span></div>' : ''; }
   function msg(title, text) { app.innerHTML = top() + '<div class="v-wrap"><div class="v-card"><h1>' + title + '</h1><p>' + text + '</p></div></div>' + foot(); }
 
   var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -200,7 +200,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
     var r = v.tests[tk].r;
     return (T.text ? '' : '<div class="v-sum ' + (flags ? '' : 'ok') + '">' + (flags ? '<b>' + flags + '</b> result(s) outside the normal range (<b style="color:#c62828">red</b> = high, <b style="color:#1565c0">blue</b> = low).' : 'All results are within the normal range.') + '</div>') + html + (r ? '<p style="font-size:14px"><b>Remarks:</b> ' + esc(r) + '</p>' : '');
   }
-  function tabLabel(k, v) { if (k === 'cum') return '📈 All results'; if (k === 'sendout') return 'Other'; if (k === 'pending') return '⏳ Pending (' + pendList(v).length + ')'; return esc((TESTS[k] && TESTS[k].short) || NAMES[k]); }
+  function tabLabel(k, v) { if (k === 'cum') return '📈 All results'; if (k === 'sendout') return 'Others'; if (k === 'pending') return '⏳ Pending (' + pendList(v).length + ')'; return esc((TESTS[k] && TESTS[k].short) || NAMES[k]); }
   function pendList(v) { return TEST_ORDER.filter(function (k) { return !v.tests[k] && (v.req || []).indexOf(k) >= 0; }).map(function (k) { return { name: (TESTS[k] && TESTS[k].short) || NAMES[k], lab: '' }; }).concat((v.sendouts || []).filter(function (x) { return !x.ready; }).map(function (x) { return { name: x.name, lab: x.lab }; })); }
   function pendHtml(v) { return '<p class="v-note">These results are not yet available. Please check again later using the same QR code, Access Code and birthday.</p>' + pendList(v).map(function (x) { return '<div class="v-row"><div class="v-line"><div class="v-name">' + esc(x.name) + (x.lab ? '<div class="v-note">' + esc(x.lab) + '</div>' : '') + '</div><span style="font-weight:800;color:#a35a00;white-space:nowrap">⏳ PENDING</span></div></div>'; }).join(''); }
   function soHtml(v) {
