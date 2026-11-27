@@ -120,7 +120,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
   }
 
   function top() { var c = PUB.clinic || {}; return '<div class="v-top">' + (PUB.logo ? '<img src="' + PUB.logo + '" alt="' + esc(c.name || 'HappyHearts') + '">' : '<div class="lname">' + esc(c.name || 'HappyHearts') + '</div><div class="lsub">' + esc(c.sub || '') + '</div>') + '</div>'; }
-  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '<br><span style="opacity:.5">page v8</span></div>' : ''; }
+  function foot() { var c = PUB.clinic || {}; return c.name ? '<div class="v-foot">' + esc(c.name) + ' ' + esc(c.sub) + '<br>' + esc(c.addr) + ' · ' + esc(c.phone) + '<br><span style="opacity:.5">page v9</span></div>' : ''; }
   function msg(title, text) { app.innerHTML = top() + '<div class="v-wrap"><div class="v-card"><h1>' + title + '</h1><p>' + text + '</p></div></div>' + foot(); }
 
   var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -172,7 +172,7 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
       b.disabled = true; b.textContent = 'Opening…';
       call('open', { code: c, bday: d }).then(function (r) {
         data = r; data.code = c; data.bday = d;
-        show(TEST_ORDER.filter(function (k) { return r.visit.tests[k]; })[0] || ((r.visit.sendouts || []).some(function (x) { return x.ready; }) ? 'sendout' : pendList(r.visit).length ? 'pending' : 'cum'));
+        show('cum');
       }).catch(function (ex) {
         var m = String(ex.message || ex), t = m.indexOf('BAD_CODE') >= 0 ? 'Wrong Access Code or birthday. Please check and try again.' : m.indexOf('LOCKED') >= 0 ? 'Too many wrong attempts. Please try again after 15 minutes.' :
           m.indexOf('NOT_READY') >= 0 ? 'Your results are not yet released. Please try again later.' : m.indexOf('BAD_LINK') >= 0 ? 'This link is not valid. Please scan the QR code again or contact the clinic.' : 'Cannot connect right now. Please check your internet and try again.';
@@ -216,13 +216,14 @@ table.cum .u{color:var(--muted);font-size:12px}table.cum .H{color:var(--red);fon
   }
   function afterShow(cur) {
     if (cur === 'cum') call('cum', { code: data.code, bday: data.bday }).then(function (r) {
-      $('#cumwrap').innerHTML = r.n ? '<div style="overflow-x:auto">' + r.html + '</div><button class="v-btn sec" id="cumpdf" style="margin-top:12px">Download cumulative PDF</button>' : '<p class="v-note">No results yet.</p>';
+      var pl = pendList(data.visit), pn = pl.length ? '<div style="border:1px solid #f0d9a8;background:#fff8eb;border-radius:10px;padding:10px 12px;margin-bottom:12px"><b style="color:#a35a00">⏳ PENDING</b><div class="v-note" style="margin:4px 0 0">Not yet available: ' + pl.map(function (x) { return esc(x.name); }).join(', ') + '. Please check again later.</div></div>' : '';
+      $('#cumwrap').innerHTML = pn + (r.n ? '<div style="overflow-x:auto">' + r.html + '</div><button class="v-btn sec" id="cumpdf" style="margin-top:12px">Download cumulative PDF</button>' : (pn ? '' : '<p class="v-note">No results yet.</p>'));
       if ($('#cumpdf')) $('#cumpdf').onclick = function () { dlBtn(this, 'cumpdf', null, 'Download cumulative PDF'); };
     }).catch(function () { $('#cumwrap').innerHTML = '<div class="err">Could not load. Please try again.</div>'; });
     $$('[data-so]').forEach(function (b) { b.onclick = function () { dlBtn(b, 'sofile', { soId: b.dataset.so }, 'Download'); }; });
   }
   function show(cur) {
-    var v = data.visit, pt = data.patient, tks = TEST_ORDER.filter(function (k) { return v.tests[k]; }).concat((v.sendouts || []).some(function (x) { return x.ready; }) ? ['sendout'] : []).concat(pendList(v).length ? ['pending'] : []).concat(['cum']);
+    var v = data.visit, pt = data.patient, tks = ['cum'].concat(TEST_ORDER.filter(function (k) { return v.tests[k]; })).concat((v.sendouts || []).some(function (x) { return x.ready; }) ? ['sendout'] : []).concat(pendList(v).length ? ['pending'] : []);
     app.innerHTML = top() + '<div class="v-wrap"><div class="v-card"><div class="v-pt"><b>Name</b><span>' + esc(pt.name) + '</span><b>Patient No.</b><span>' + esc(pt.pno) + '</span><b>Test date</b><span>' + esc(fmtDate(v.date)) + '</span>' + (v.physician ? '<b>Physician</b><span>' + esc(v.physician) + '</span>' : '') + '</div></div>' +
       '<div class="v-tabs">' + tks.map(function (k) { return '<button data-tk="' + k + '" class="' + (k === cur ? 'on' : '') + '">' + tabLabel(k, v) + '</button>'; }).join('') + '</div>' +
       '<div class="v-card"><h1>' + esc(NAMES[cur] || '') + '</h1>' + (cur === 'cum' ? '<div id="cumwrap"><span class="spin"></span> Loading…</div>' : cur === 'sendout' ? soHtml(v) : cur === 'pending' ? pendHtml(v) : v.tests[cur] ? testHtml(cur) :
